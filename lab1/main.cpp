@@ -19,11 +19,12 @@ struct Edge
 
 using Vertices = std::vector<Vertex>;
 using Edges = std::vector<Edge>;
+using Matrix = std::vector<std::vector<float> >;
 
 class Graph
 {
 public:
-	bool open(const std::string & path)
+	void open(const std::string & path)
 	{
 		std::string line;
 		std::ifstream file(path.c_str() );
@@ -44,19 +45,7 @@ public:
 				Vertex vertex;
 
 				std::getline(file, line, ' ');
-
-				try
-				{
-					vertex.id = std::stoi(line);
-				}
-				catch(std::invalid_argument err)
-				{
-					std::cerr << "Exception caught: " << err.what() << " processing: " 
-						<< line << '\n';
-
-					return false;
-				}
-
+				vertex.id = std::stoi(line);
 				std::getline(file, line, '\n');
 
 				vertex.name = line;
@@ -67,46 +56,68 @@ public:
 			{
 				Edge edge;
 
-				try
-				{
-					edge.a = std::stoi(line);
-					std::getline(file, line, ' ');
-					edge.b = std::stoi(line);
-					std::getline(file, line, ' ');
-					edge.weight = std::stof(line);
-					std::getline(file, line, '\n');
-					edge.name = line;
-					m_edges.push_back(edge);
-				}
-				catch(std::invalid_argument err)
-				{
-					std::cerr << "Exception caught: " << err.what() << " processing: " 
-						<< line << '\n';
-
-					return false;
-				}
+				edge.a = std::stoi(line);
+				std::getline(file, line, ' ');
+				edge.b = std::stoi(line);
+				std::getline(file, line, ' ');
+				edge.weight = std::stof(line);
+				std::getline(file, line, '\n');
+				edge.name = line;
+				m_edges.push_back(edge);
 			}
 		}
 
-		/*
-		for(auto & v : m_vertices)
-		{
-			std::cout << v.id << ' ' << v.name << '\n';
-		}
+		m_matrix.resize(m_vertices.size(), std::vector<float>(m_vertices.size(), 0.) );
 
-		for(auto & e : m_edges)
-		{
-			std::cout << e.name << ' '  << e.weight << ' ' << e.a << ' ' << e.b << '\n';
-		}
-		*/
-
-		return true;
+		for(auto &edge : m_edges) m_matrix[edge.a][edge.b] = edge.weight;
 	}
 
+	void display()
+	{
+		std::string str;
+		int i = 0;
+
+		std::cout << "\\     ";
+
+		for(int j = 0; j < m_matrix.size(); j++)
+		{
+			str = std::to_string(j);
+			while(str.size() < 6) str.push_back(' ');
+			std::cout << str;
+		}
+
+		std::cout << '\n';
+
+		for(auto &array : m_matrix)
+		{
+			str = std::to_string(i);
+			while(str.size() < 6) str.push_back(' ');
+
+			std::cout << str;
+
+			for(auto element : array)
+			{
+				if(element == 0)
+				{
+					std::cout << "N     ";
+				}
+				else
+				{
+					str = std::to_string(element);
+					while(str.size() > 4) str.pop_back();
+					std::cout << str << "  ";
+				}
+			}
+
+			std::cout << '\n';
+			++i;
+		}
+	}
 	
 private:
 	Vertices m_vertices;
 	Edges m_edges;
+	Matrix m_matrix;
 };
 
 int main()
@@ -114,7 +125,16 @@ int main()
 
 	Graph graph;
 
-	graph.open("export.txt");
+	try
+	{
+		graph.open("export.txt");
+	}
+	catch(std::invalid_argument err)
+	{
+		std::cout << "File could not be parsed: " << err.what() << '\n';
+	}
+
+	graph.display();
 
 	return 0;
 }
