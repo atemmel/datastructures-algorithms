@@ -29,18 +29,16 @@ public:
 		std::string line;
 		std::ifstream file(path.c_str() );
 
-		if(!file.is_open() ) return false;
+		if(!file.is_open() ) return;
 
 		while(std::getline(file, line, ' ') )
 		{
 			if(line.front() == '#') 
 			{
 				file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				continue;
+				//continue;
 			}
-
-
-			if(line.front() == 'M')  // Vertex
+			else if(line.front() == 'M')  // Vertex
 			{
 				Vertex vertex;
 
