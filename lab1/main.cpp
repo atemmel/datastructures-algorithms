@@ -1,25 +1,36 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <limits>
+#include <stack>
 
 struct Vertex
 {
 	int id;
 	std::string name;
+	bool visited = 0;
 };
+
+using Vertices = std::vector<Vertex>;
 
 struct Edge
 {
-	int a, b;
+	Vertices::iterator a, b;
 	float weight;
 	std::string name;
 };
 
-using Vertices = std::vector<Vertex>;
 using Edges = std::vector<Edge>;
-using Matrix = std::vector<std::vector<float> >;
+
+struct Index
+{
+	Edges::iterator edge;
+	float weight = 0.f;
+};
+
+using Matrix = std::vector<std::vector<Index> >;
 
 class Graph
 {
@@ -36,7 +47,6 @@ public:
 			if(line.front() == '#') 
 			{
 				file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				//continue;
 			}
 			else if(line.front() == 'M')  // Vertex
 			{
@@ -52,22 +62,36 @@ public:
 			}
 			else
 			{
-				Edge edge;
-
-				edge.a = std::stoi(line);
+				int a = std::stoi(line);
 				std::getline(file, line, ' ');
-				edge.b = std::stoi(line);
+				int b = std::stoi(line);
 				std::getline(file, line, ' ');
-				edge.weight = std::stof(line);
+				float weight = std::stof(line);
 				std::getline(file, line, '\n');
-				edge.name = line;
-				m_edges.push_back(edge);
+
+				auto start = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &v)
+				{
+					return v.id == a;
+				});
+
+				auto end = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &v)
+				{
+					return v.id == b;
+				});
+
+				m_edges.push_back(Edge{start, end, weight, line} );
 			}
 		}
 
-		m_matrix.resize(m_vertices.size(), std::vector<float>(m_vertices.size(), 0.) );
+		m_matrix.resize(m_vertices.size(), std::vector<Index>(m_vertices.size() ) );
 
-		for(auto &edge : m_edges) m_matrix[edge.a][edge.b] = edge.weight;
+		for(auto it = m_edges.begin(); it != m_edges.end(); it++) 
+		{
+			auto &m = m_matrix[it->a->id][it->b->id];
+
+			m.weight = it->weight;
+			m.edge = it;
+		}
 	}
 
 	void display()
@@ -93,15 +117,15 @@ public:
 
 			std::cout << str;
 
-			for(auto element : array)
+			for(auto index : array)
 			{
-				if(element == 0)
+				if(index.weight == 0.f)
 				{
 					std::cout << "N     ";
 				}
 				else
 				{
-					str = std::to_string(element);
+					str = std::to_string(index.weight);
 					while(str.size() > 4) str.pop_back();
 					std::cout << str << "  ";
 				}
@@ -109,6 +133,82 @@ public:
 
 			std::cout << '\n';
 			++i;
+		}
+	}
+
+	bool depth_first()
+	{
+
+		std::stack<Vertices::iterator> frontier;
+
+		auto getNeighbours = [&](Vertices::iterator vertex)
+		{
+			std::vector<Vertices::iterator> neighbours;
+
+			for(auto &index : m_matrix[vertex->id])
+			{
+
+				if(index.weight > 0.f)
+				{
+					Vertices::iterator neighbour = vertex->id == index.edge->a->id ?
+						index.edge->b : index.edge->a;
+					
+					if(neighbour->visited) continue;
+
+					neighbours.push_back(neighbour);
+				}
+			}
+
+			return neighbours;
+		};
+
+		frontier.push(m_vertices.begin() );
+
+		for(auto &v : m_vertices) v.visited = false;
+
+		while(!frontier.empty() )
+		{
+			auto vertex = frontier.top();
+			vertex->visited = true;
+
+			auto neighbours = getNeighbours(vertex);
+			//std::cout << "Standing at: " << vertex->id << '\n';
+
+			if(!neighbours.empty() )
+			{
+				Edges::iterator road = m_matrix[neighbours.front()->id][vertex->id].edge;
+				//std::cout << "Will go to: " << neighbours.front()->id << " through " << road->name << '\n';
+				frontier.push(neighbours.front() );
+			}
+			else frontier.pop();
+		}
+
+		for(auto &vertex : m_vertices) if(!vertex.visited) return false;
+
+		return true;
+	}
+
+	bool breadth_first()
+	{
+		return true;
+	}
+
+	void repair()
+	{
+		for(auto &vertex: m_vertices)
+		{
+			if(!vertex.visited)
+			{
+				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
+				{
+					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
+
+					if(a.weight != b.weight)
+					{
+						a.weight = b.weight = std::max(a.weight, b.weight);
+					}
+				}
+			}
 		}
 	}
 	
@@ -131,6 +231,11 @@ int main()
 	{
 		std::cout << "File could not be parsed: " << err.what() << '\n';
 	}
+
+
+	graph.depth_first();
+
+	graph.repair();
 
 	graph.display();
 
