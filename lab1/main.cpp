@@ -137,7 +137,7 @@ public:
 		}
 	}
 
-	bool depth_first()
+	bool depthFirst()
 	{
 
 		std::stack<Vertices::iterator> stack;
@@ -147,7 +147,7 @@ public:
 		return search(stack, getStack);
 	}
 
-	bool breadth_first()
+	bool breadthFirst()
 	{
 		std::queue<Vertices::iterator> queue;
 
@@ -246,7 +246,7 @@ int main()
 		std::cout << "File could not be parsed: " << err.what() << '\n';
 	}
 
-	if(!graph.breadth_first() && !graph.depth_first() ) graph.repair();
+	if(!graph.breadthFirst() && !graph.depthFirst() ) graph.repair();
 
 	graph.display();
 
