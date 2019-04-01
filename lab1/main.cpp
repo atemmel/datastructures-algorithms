@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <stack>
+#include <queue>
 
 struct Vertex
 {
@@ -139,8 +140,46 @@ public:
 	bool depth_first()
 	{
 
-		std::stack<Vertices::iterator> frontier;
+		std::stack<Vertices::iterator> stack;
 
+		auto getStack = [&]() { return stack.top(); };
+		
+		return search(stack, getStack);
+	}
+
+	bool breadth_first()
+	{
+		std::queue<Vertices::iterator> queue;
+
+		auto getQueue = [&]() { return queue.back(); };
+
+		return search(queue, getQueue);
+	}
+
+	void repair()
+	{
+		for(auto &vertex: m_vertices)
+		{
+			if(!vertex.visited)
+			{
+				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
+				{
+					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
+
+					if(a.weight != b.weight)
+					{
+						a.weight = b.weight = std::max(a.weight, b.weight);
+					}
+				}
+			}
+		}
+	}
+	
+private:
+
+	template<typename Container, typename GetElement>
+	bool search(Container &frontier, GetElement get)
+	{
 		auto getNeighbours = [&](Vertices::iterator vertex)
 		{
 			std::vector<Vertices::iterator> neighbours;
@@ -168,7 +207,7 @@ public:
 
 		while(!frontier.empty() )
 		{
-			auto vertex = frontier.top();
+			auto vertex = get();
 			vertex->visited = true;
 
 			auto neighbours = getNeighbours(vertex);
@@ -188,31 +227,6 @@ public:
 		return true;
 	}
 
-	bool breadth_first()
-	{
-		return true;
-	}
-
-	void repair()
-	{
-		for(auto &vertex: m_vertices)
-		{
-			if(!vertex.visited)
-			{
-				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
-				{
-					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
-
-					if(a.weight != b.weight)
-					{
-						a.weight = b.weight = std::max(a.weight, b.weight);
-					}
-				}
-			}
-		}
-	}
-	
-private:
 	Vertices m_vertices;
 	Edges m_edges;
 	Matrix m_matrix;
@@ -232,10 +246,7 @@ int main()
 		std::cout << "File could not be parsed: " << err.what() << '\n';
 	}
 
-
-	graph.depth_first();
-
-	graph.repair();
+	if(!graph.breadth_first() && !graph.depth_first() ) graph.repair();
 
 	graph.display();
 
