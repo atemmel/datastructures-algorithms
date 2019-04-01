@@ -24,14 +24,7 @@ struct Edge
 };
 
 using Edges = std::vector<Edge>;
-
-struct Index
-{
-	Edges::iterator edge;
-	float weight = 0.f;
-};
-
-using Matrix = std::vector<std::vector<Index> >;
+using Matrix = std::vector<std::vector<Edges::iterator> >;
 
 class Graph
 {
@@ -84,14 +77,12 @@ public:
 			}
 		}
 
-		m_matrix.resize(m_vertices.size(), std::vector<Index>(m_vertices.size() ) );
+		m_matrix.resize(m_vertices.size(), std::vector<Edges::iterator>(m_vertices.size(), m_edges.end() ) );
 
 		for(auto it = m_edges.begin(); it != m_edges.end(); it++) 
 		{
 			auto &m = m_matrix[it->a->id][it->b->id];
-
-			m.weight = it->weight;
-			m.edge = it;
+			m = it;
 		}
 	}
 
@@ -118,15 +109,15 @@ public:
 
 			std::cout << str;
 
-			for(auto index : array)
+			for(auto edge : array)
 			{
-				if(index.weight == 0.f)
+				if(edge == m_edges.end() )
 				{
-					std::cout << "N     ";
+					std::cout << "      ";
 				}
 				else
 				{
-					str = std::to_string(index.weight);
+					str = std::to_string(edge->weight);
 					while(str.size() > 4) str.pop_back();
 					std::cout << str << "  ";
 				}
@@ -164,43 +155,68 @@ public:
 			{
 				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
 				{
-					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
+					auto a = m_matrix[vertex.id][i], b = m_matrix[j][vertex.id];
 
-					if(a.weight != b.weight)
-					{
-						a.weight = b.weight = std::max(a.weight, b.weight);
-					}
+					if(a != b) a = b = std::max(a, b);
 				}
 			}
 		}
 	}
+
+	/*
+	std::vector<std::string> djikstra(int start, int end)
+	{
+		auto startVertex = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &vertex)
+		{
+			return vertex.id == start;
+		});
+		
+		auto endVertex = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &vertex)
+		{
+			return vertex.id == end;
+		});
+
+		std::vector<Edges::iterator> history;
+		std::priority_queue<Edges::iterator> queue([](const Edges::iterator &lhs, const Edges::iterator &rhs)
+		{
+			return lhs->weight < rhs->weight;
+		});
+
+		history.push_back(startVertex);
+
+
+
+		auto neighbours = getNeighbours(startVertex);
+
+		return std::vector<std::string>();
+	}
+	*/
 	
 private:
+
+	std::vector<Vertices::iterator> getNeighbours(Vertices::iterator vertex)
+	{
+		std::vector<Vertices::iterator> neighbours;
+
+		for(auto edge : m_matrix[vertex->id])
+		{
+			if(edge != m_edges.end() )
+			{
+				Vertices::iterator neighbour = vertex->id == edge->a->id ?
+					edge->b : edge->a;
+				
+				if(neighbour->visited) continue;
+
+				neighbours.push_back(neighbour);
+			}
+		}
+
+		return neighbours;
+	}
 
 	template<typename Container, typename GetElement>
 	bool search(Container &frontier, GetElement get)
 	{
-		auto getNeighbours = [&](Vertices::iterator vertex)
-		{
-			std::vector<Vertices::iterator> neighbours;
-
-			for(auto &index : m_matrix[vertex->id])
-			{
-
-				if(index.weight > 0.f)
-				{
-					Vertices::iterator neighbour = vertex->id == index.edge->a->id ?
-						index.edge->b : index.edge->a;
-					
-					if(neighbour->visited) continue;
-
-					neighbours.push_back(neighbour);
-				}
-			}
-
-			return neighbours;
-		};
-
 		frontier.push(m_vertices.begin() );
 
 		for(auto &v : m_vertices) v.visited = false;
@@ -215,7 +231,7 @@ private:
 
 			if(!neighbours.empty() )
 			{
-				Edges::iterator road = m_matrix[neighbours.front()->id][vertex->id].edge;
+				Edges::iterator road = m_matrix[neighbours.front()->id][vertex->id];
 				//std::cout << "Will go to: " << neighbours.front()->id << " through " << road->name << '\n';
 				frontier.push(neighbours.front() );
 			}
