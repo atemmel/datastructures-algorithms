@@ -142,7 +142,7 @@ public:
 	{
 		std::queue<Vertices::iterator> queue;
 
-		auto getQueue = [&]() { return queue.back(); };
+		auto getQueue = [&]() { return queue.front(); };
 
 		return search(queue, getQueue);
 	}
@@ -217,22 +217,21 @@ private:
 	template<typename Container, typename GetElement>
 	bool search(Container &frontier, GetElement get)
 	{
-		frontier.push(m_vertices.begin() );
-
 		for(auto &v : m_vertices) v.visited = false;
+
+		frontier.push(m_vertices.begin() );
+		m_vertices.begin()->visited = true;
 
 		while(!frontier.empty() )
 		{
 			auto vertex = get();
-			vertex->visited = true;
-
 			auto neighbours = getNeighbours(vertex);
+
 			//std::cout << "Standing at: " << vertex->id << '\n';
 
 			if(!neighbours.empty() )
 			{
-				Edges::iterator road = m_matrix[neighbours.front()->id][vertex->id];
-				//std::cout << "Will go to: " << neighbours.front()->id << " through " << road->name << '\n';
+				neighbours.front()->visited = true;
 				frontier.push(neighbours.front() );
 			}
 			else frontier.pop();
