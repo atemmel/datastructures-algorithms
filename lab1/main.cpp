@@ -155,9 +155,8 @@ public:
 			{
 				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
 				{
-					auto a = m_matrix[vertex.id][i], b = m_matrix[j][vertex.id];
-
-					if(a != b) a = b = std::max(a, b);
+					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
+					a = b = std::min(a, b);
 				}
 			}
 		}
@@ -221,7 +220,6 @@ private:
 
 		frontier.push(m_vertices.begin() );
 		m_vertices.begin()->visited = true;
-
 		while(!frontier.empty() )
 		{
 			auto vertex = get();
@@ -264,6 +262,7 @@ int main()
 	if(!graph.breadthFirst() && !graph.depthFirst() ) graph.repair();
 
 	graph.display();
+	std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
 
 	return 0;
 }
