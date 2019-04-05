@@ -11,7 +11,13 @@ struct Vertex
 {
 	int id;
 	std::string name;
+	float effectiveWeight = std::numeric_limits<float>::max();
 	bool visited = 0;
+
+	bool operator<(const Vertex &rhs)
+	{
+		return effectiveWeight < rhs.effectiveWeight;
+	}
 };
 
 using Vertices = std::vector<Vertex>;
@@ -153,17 +159,16 @@ public:
 		{
 			if(!vertex.visited)
 			{
-				for(int i = 0, j = 0; j < m_matrix.size(); i++, j++)
+				for(int i = 0; i < m_matrix.size(); i++)
 				{
-					auto &a = m_matrix[vertex.id][i], &b = m_matrix[j][vertex.id];
+					auto &a = m_matrix[vertex.id][i], &b = m_matrix[i][vertex.id];
 					a = b = std::min(a, b);
 				}
 			}
 		}
 	}
 
-	/*
-	std::vector<std::string> djikstra(int start, int end)
+	std::vector<Edges::iterator> djikstra(int start, int end)
 	{
 		auto startVertex = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &vertex)
 		{
@@ -175,21 +180,55 @@ public:
 			return vertex.id == end;
 		});
 
+		reset();
+
 		std::vector<Edges::iterator> history;
-		std::priority_queue<Edges::iterator> queue([](const Edges::iterator &lhs, const Edges::iterator &rhs)
+		std::vector<Vertices::iterator> queue;
+		
+		auto pop = [&]()
 		{
-			return lhs->weight < rhs->weight;
-		});
+			queue.erase(std::min_element(queue.begin(), queue.end() ) );
+		};
 
-		history.push_back(startVertex);
+		auto top = [&]()
+		{
+			return *std::max_element(queue.begin(), queue.end() );
+		};
 
+		queue.push_back(startVertex);
+		startVertex->effectiveWeight = 0.f;
+		startVertex->visited = true;
 
+		std::cout << "Moving to: " << endVertex->name << '\n';
 
-		auto neighbours = getNeighbours(startVertex);
+		while(!queue.empty() )
+		{
+			auto neighbours = getNeighbours(top() );
 
-		return std::vector<std::string>();
+			if(neighbours.empty() )
+			{
+				pop();
+				continue;
+			}
+
+			for(auto neighbour : neighbours)
+			{
+				float weight = m_matrix[startVertex->id][neighbour->id]->weight + top()->effectiveWeight;
+				neighbour->visited = true;
+				queue.push_back(neighbour);
+				if(weight < neighbour->effectiveWeight) neighbour->effectiveWeight = weight;
+			}
+
+			auto cheapest = *std::min_element(neighbours.begin(), neighbours.end() );
+
+			std::cout << cheapest->name << " was chosen\n";
+
+			history.push_back(m_matrix[top()->id][cheapest->id]);
+			pop();
+		}
+
+		return history;
 	}
-	*/
 	
 private:
 
@@ -216,7 +255,7 @@ private:
 	template<typename Container, typename GetElement>
 	bool search(Container &frontier, GetElement get)
 	{
-		for(auto &v : m_vertices) v.visited = false;
+		reset();
 
 		frontier.push(m_vertices.begin() );
 		m_vertices.begin()->visited = true;
@@ -238,6 +277,16 @@ private:
 		for(auto &vertex : m_vertices) if(!vertex.visited) return false;
 
 		return true;
+	}
+
+	void reset()
+	{
+
+		for(auto &v : m_vertices) 
+		{
+			v.visited = false;
+			v.effectiveWeight = std::numeric_limits<float>::max();
+		}
 	}
 
 	Vertices m_vertices;
@@ -263,6 +312,8 @@ int main()
 
 	graph.display();
 	std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
+
+	graph.djikstra(0, 10);
 
 	return 0;
 }
