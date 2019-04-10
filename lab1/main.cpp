@@ -172,16 +172,6 @@ public:
 
 	void repair()
 	{
-		/*
-		auto moveEnd = [&]()
-		{
-			for(auto &row : m_matrix)
-				for(auto &it : row)
-					if(it == m_edges.end() )
-						++it;
-		};
-		*/
-
 		for(auto &vertex: m_vertices)
 		{
 			if(!vertex.visited)
@@ -189,23 +179,17 @@ public:
 				for(int i = 0; i < m_matrix.size(); i++)
 				{
 					auto &a = m_matrix[vertex.id][i], &b = m_matrix[i][vertex.id];
-					a = b = std::min(a, b);
-					//aapapapapapa swappa positioner
 					
-					/*
-					if(a != m_edges.end() && b == m_edges.end() )
+					if(a && !b)
 					{
-						moveEnd();
-						m_edges.push_back({a->b, a->a, a->weight, a->name});
-						b = m_edges.end() - 1;
+						b = a;
+						std::swap(b.a, b.b);
 					}
-					else if(a == m_edges.end() && b != m_edges.end() )
+					else if(!a && b)
 					{
-						moveEnd();
-						m_edges.push_back({b->b, b->a, b->weight, b->name});
-						a = m_edges.end() - 1;
+						a = b;
+						std::swap(a.a, a.b);
 					}
-					*/
 				}
 			}
 		}
