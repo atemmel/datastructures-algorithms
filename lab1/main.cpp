@@ -14,7 +14,7 @@ struct Vertex
 	float effectiveWeight = std::numeric_limits<float>::max();
 	bool visited = 0;
 
-	bool operator<(const Vertex &rhs)
+	bool operator<(const Vertex &rhs) const
 	{
 		return effectiveWeight < rhs.effectiveWeight;
 	}
@@ -25,17 +25,22 @@ using Vertices = std::vector<Vertex>;
 struct Edge
 {
 	Vertices::iterator a, b;
-	float weight;
+	float weight = std::numeric_limits<float>::max();
 	std::string name;
 
-	bool operator<(const Edge &rhs)
+	bool operator<(const Edge &rhs) const
 	{
 		return weight < rhs.weight;
+	}
+
+	operator bool () const
+	{
+		return weight != std::numeric_limits<float>::max();
 	}
 };
 
 using Edges = std::vector<Edge>;
-using Matrix = std::vector<std::vector<Edges::iterator> >;
+using Matrix = std::vector<Edges>;
 
 class Graph
 {
@@ -46,6 +51,8 @@ public:
 		std::ifstream file(path.c_str() );
 
 		if(!file.is_open() ) return;
+
+		Edges edges;
 
 		while(std::getline(file, line, ' ') )
 		{
@@ -84,17 +91,21 @@ public:
 					return v.id == b;
 				});
 
-				m_edges.push_back(Edge{start, end, weight, line} );
+				edges.push_back(Edge{start, end, weight, line} );
 			}
 		}
 
-		m_matrix.resize(m_vertices.size(), std::vector<Edges::iterator>(m_vertices.size(), m_edges.end() ) );
+		m_matrix.resize(m_vertices.size(), Edges(m_vertices.size() ) );
 
+		/*
 		for(auto it = m_edges.begin(); it != m_edges.end(); it++) 
 		{
 			auto &m = m_matrix[it->a->id][it->b->id];
 			m = it;
 		}
+		*/
+
+		for(auto &e : edges) m_matrix[e.a->id][e.b->id] = e;
 	}
 
 	void display()
@@ -120,15 +131,16 @@ public:
 
 			std::cout << str;
 
-			for(auto edge : array)
+			for(auto &edge : array)
 			{
-				if(edge == m_edges.end() )
+				//if(edge == m_edges.end() )
+				if(!edge)
 				{
 					std::cout << "      ";
 				}
 				else
 				{
-					str = std::to_string(edge->weight);
+					str = std::to_string(edge.weight);
 					while(str.size() > 4) str.pop_back();
 					std::cout << str << "  ";
 				}
@@ -160,6 +172,7 @@ public:
 
 	void repair()
 	{
+		/*
 		auto moveEnd = [&]()
 		{
 			for(auto &row : m_matrix)
@@ -167,6 +180,7 @@ public:
 					if(it == m_edges.end() )
 						++it;
 		};
+		*/
 
 		for(auto &vertex: m_vertices)
 		{
@@ -175,8 +189,10 @@ public:
 				for(int i = 0; i < m_matrix.size(); i++)
 				{
 					auto &a = m_matrix[vertex.id][i], &b = m_matrix[i][vertex.id];
-					//a = b = std::min(a, b);
+					a = b = std::min(a, b);
+					//aapapapapapa swappa positioner
 					
+					/*
 					if(a != m_edges.end() && b == m_edges.end() )
 					{
 						moveEnd();
@@ -189,6 +205,7 @@ public:
 						m_edges.push_back({b->b, b->a, b->weight, b->name});
 						a = m_edges.end() - 1;
 					}
+					*/
 				}
 			}
 		}
@@ -217,12 +234,12 @@ private:
 	{
 		std::vector<Vertices::iterator> neighbours;
 
-		for(auto edge : m_matrix[vertex->id])
+		for(auto &edge : m_matrix[vertex->id])
 		{
-			if(edge != m_edges.end() )
+			if(edge)
 			{
-				Vertices::iterator neighbour = vertex->id == edge->a->id ?
-					edge->b : edge->a;
+				Vertices::iterator neighbour = vertex->id == edge.a->id ?
+					edge.b : edge.a;
 				
 				if(neighbour->visited) continue;
 
@@ -271,7 +288,6 @@ private:
 	}
 
 	Vertices m_vertices;
-	Edges m_edges;
 	Matrix m_matrix;
 };
 
