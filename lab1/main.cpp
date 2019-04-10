@@ -27,6 +27,11 @@ struct Edge
 	Vertices::iterator a, b;
 	float weight;
 	std::string name;
+
+	bool operator<(const Edge &rhs)
+	{
+		return weight < rhs.weight;
+	}
 };
 
 using Edges = std::vector<Edge>;
@@ -155,6 +160,14 @@ public:
 
 	void repair()
 	{
+		auto moveEnd = [&]()
+		{
+			for(auto &row : m_matrix)
+				for(auto &it : row)
+					if(it == m_edges.end() )
+						++it;
+		};
+
 		for(auto &vertex: m_vertices)
 		{
 			if(!vertex.visited)
@@ -162,7 +175,20 @@ public:
 				for(int i = 0; i < m_matrix.size(); i++)
 				{
 					auto &a = m_matrix[vertex.id][i], &b = m_matrix[i][vertex.id];
-					a = b = std::min(a, b);
+					//a = b = std::min(a, b);
+					
+					if(a != m_edges.end() && b == m_edges.end() )
+					{
+						moveEnd();
+						m_edges.push_back({a->b, a->a, a->weight, a->name});
+						b = m_edges.end() - 1;
+					}
+					else if(a == m_edges.end() && b != m_edges.end() )
+					{
+						moveEnd();
+						m_edges.push_back({b->b, b->a, b->weight, b->name});
+						a = m_edges.end() - 1;
+					}
 				}
 			}
 		}
@@ -182,52 +208,7 @@ public:
 
 		reset();
 
-		std::vector<Edges::iterator> history;
-		std::vector<Vertices::iterator> queue;
-		
-		auto pop = [&]()
-		{
-			queue.erase(std::min_element(queue.begin(), queue.end() ) );
-		};
-
-		auto top = [&]()
-		{
-			return *std::max_element(queue.begin(), queue.end() );
-		};
-
-		queue.push_back(startVertex);
-		startVertex->effectiveWeight = 0.f;
-		startVertex->visited = true;
-
-		std::cout << "Moving to: " << endVertex->name << '\n';
-
-		while(!queue.empty() )
-		{
-			auto neighbours = getNeighbours(top() );
-
-			if(neighbours.empty() )
-			{
-				pop();
-				continue;
-			}
-
-			for(auto neighbour : neighbours)
-			{
-				float weight = m_matrix[startVertex->id][neighbour->id]->weight + top()->effectiveWeight;
-				neighbour->visited = true;
-				queue.push_back(neighbour);
-				if(weight < neighbour->effectiveWeight) neighbour->effectiveWeight = weight;
-			}
-
-			auto cheapest = *std::min_element(neighbours.begin(), neighbours.end() );
-
-			std::cout << cheapest->name << " was chosen\n";
-
-			history.push_back(m_matrix[top()->id][cheapest->id]);
-			pop();
-		}
-
-		return history;
+		return std::vector<Edges::iterator>();
 	}
 	
 private:
@@ -313,7 +294,10 @@ int main()
 	graph.display();
 	std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
 
-	graph.djikstra(0, 10);
+	auto s = graph.djikstra(0, 10);
+
+	for(auto v : s) std::cout << v->name << '\n';
+	puts("");
 
 	return 0;
 }
