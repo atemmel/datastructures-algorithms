@@ -29,16 +29,6 @@ struct Edge
 	float weight = std::numeric_limits<float>::infinity();
 	std::string name;
 
-	bool operator<(const Edge &rhs) const
-	{
-		return weight < rhs.weight;
-	}
-
-	bool operator>(const Edge &rhs) const
-	{
-		return weight > rhs.weight;
-	}
-
 	operator bool () const
 	{
 		return weight != std::numeric_limits<float>::infinity();
@@ -204,7 +194,7 @@ public:
 		}
 	}
 
-	std::vector<Edges::iterator> djikstra(int start, int end)
+	Vertices::iterator djikstra(int start, int end)
 	{
 		auto startVertex = std::find_if(m_vertices.begin(), m_vertices.end(), [&](const Vertex &vertex)
 		{
@@ -216,63 +206,41 @@ public:
 			return vertex.id == end;
 		});
 
-		auto completed = [&]()
-		{
-			for(auto &v : m_vertices) if(!v.visited) return false;
-			return true;
-		};
-
 		reset();
 
-		std::priority_queue<Edge, Edges, std::greater<Edge> > edges;
+		std::vector<Vertices::iterator> vertices;
+		for(auto it = m_vertices.begin(); it != m_vertices.end(); it++) vertices.push_back(it);
+
+		auto minElement = [&]()
+		{
+			auto min = vertices.front();
+			for(auto v : vertices) if(*v < *min) min = v;
+			return min;
+		};
+
 		startVertex->visited = true;
 		startVertex->effectiveWeight = 0.f;
 
-		auto findEdges = [&](const Vertex &vertex)
+		while(!vertices.empty() )
 		{
-			for(auto &edge : m_matrix[vertex.id])
-				if(edge) 
-					edges.push(edge);
-		};
+			auto min = minElement();
+			auto neighbours = getNeighbours(min);
 
-		findEdges(*startVertex);
-
-		while(!edges.empty() )
-		{
-			auto min = edges.top();
-			edges.pop();
-
-			float newWeight = min.weight + min.a->effectiveWeight;
-
-			if(newWeight < min.b->effectiveWeight)
+			for(auto neighbour : neighbours)
 			{
-				min.b->effectiveWeight = newWeight;
-				min.b->parent = min.a;
+				float newWeight = min->effectiveWeight + m_matrix[min->id][neighbour->id].weight;
+
+				if(newWeight < neighbour->effectiveWeight)
+				{
+					neighbour->effectiveWeight = newWeight;
+					neighbour->parent = min;
+				}
 			}
-
-			if(min.b->visited) 
-			{
-				std::cout << min.a->id << "\t->\t" << min.b->id << "\tcosts\t" << min.weight << "\tSkipped!\n" ;
-				continue;
-			}
-			else findEdges(*min.b);
-
-			min.b->visited = true;
-
-			std::cout << min.a->id << "\t->\t" << min.b->id << "\tcosts\t" << min.weight << "\tcost for: " << min.b->id << '\t' << min.b->effectiveWeight << '\n';
+			
+			vertices.erase(std::find(vertices.begin(), vertices.end(), min) );
 		}
 
-		printPath(endVertex);
-		printPath(m_vertices.begin() + 28);
-
-		return std::vector<Edges::iterator>();
-	}
-	
-private:
-	float getDistance(Vertices::iterator it)
-	{
-		if(it->parent != m_vertices.end() ) return m_matrix[it->id][it->parent->id].weight + getDistance(it->parent);
-		return 0.f;
+		return endVertex;
 	}
 
 	void printPath(Vertices::iterator it)
@@ -281,7 +249,8 @@ private:
 		if(it->parent != m_vertices.end() ) printPath(it->parent);
 		else puts("START");
 	}
-
+	
+private:
 	std::vector<Vertices::iterator> getNeighbours(Vertices::iterator vertex)
 	{
 		std::vector<Vertices::iterator> neighbours;
@@ -346,7 +315,6 @@ private:
 
 int main()
 {
-
 	Graph graph;
 
 	try
@@ -360,10 +328,20 @@ int main()
 
 	if(!graph.breadthFirst() && !graph.depthFirst() ) graph.repair();
 
-	//graph.display();
-	//std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
+	graph.display();
+	std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
 
-	auto s = graph.djikstra(24, 37);
+	auto a = graph.djikstra(24, 37);
+	graph.printPath(a);
+	std::cout << "Shortest distance between 24 -> 37 is: " << a->effectiveWeight << '\n';
+
+	auto b = graph.djikstra(45, 47);
+	graph.printPath(b);
+	std::cout << "Shortest distance between 45 -> 47 is: " << b->effectiveWeight << '\n';
+
+	auto c = graph.djikstra(45, 19);
+	graph.printPath(c);
+	std::cout << "Shortest distance between 45 -> 19 is: " << c->effectiveWeight << '\n';
 
 	//graph.csv();
 
