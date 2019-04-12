@@ -121,7 +121,6 @@ public:
 
 			for(auto &edge : array)
 			{
-				//if(edge == m_edges.end() )
 				if(!edge)
 				{
 					std::cout << "      ";
