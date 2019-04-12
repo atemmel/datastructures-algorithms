@@ -11,8 +11,9 @@ struct Vertex
 {
 	int id;
 	std::string name;
-	float effectiveWeight = std::numeric_limits<float>::max();
 	bool visited = 0;
+	std::vector<Vertex>::iterator parent;
+	float effectiveWeight = std::numeric_limits<float>::infinity();
 
 	bool operator<(const Vertex &rhs) const
 	{
@@ -25,7 +26,7 @@ using Vertices = std::vector<Vertex>;
 struct Edge
 {
 	Vertices::iterator a, b;
-	float weight = std::numeric_limits<float>::max();
+	float weight = std::numeric_limits<float>::infinity();
 	std::string name;
 
 	bool operator<(const Edge &rhs) const
@@ -33,9 +34,14 @@ struct Edge
 		return weight < rhs.weight;
 	}
 
+	bool operator>(const Edge &rhs) const
+	{
+		return weight > rhs.weight;
+	}
+
 	operator bool () const
 	{
-		return weight != std::numeric_limits<float>::max();
+		return weight != std::numeric_limits<float>::infinity();
 	}
 };
 
@@ -97,14 +103,6 @@ public:
 
 		m_matrix.resize(m_vertices.size(), Edges(m_vertices.size() ) );
 
-		/*
-		for(auto it = m_edges.begin(); it != m_edges.end(); it++) 
-		{
-			auto &m = m_matrix[it->a->id][it->b->id];
-			m = it;
-		}
-		*/
-
 		for(auto &e : edges) m_matrix[e.a->id][e.b->id] = e;
 	}
 
@@ -148,6 +146,17 @@ public:
 
 			std::cout << '\n';
 			++i;
+		}
+	}
+
+	void csv()
+	{
+		std::ofstream file("export.csv");
+		for(auto &row : m_matrix)
+		{
+			for(auto &edge : row) file << (edge.weight == std::numeric_limits<float>::infinity() ? 0.f : edge.weight ) << ',';
+			file.seekp(-1, std::ios_base::cur);
+			file << '\n';
 		}
 	}
 
@@ -207,12 +216,71 @@ public:
 			return vertex.id == end;
 		});
 
+		auto completed = [&]()
+		{
+			for(auto &v : m_vertices) if(!v.visited) return false;
+			return true;
+		};
+
 		reset();
+
+		std::priority_queue<Edge, Edges, std::greater<Edge> > edges;
+		startVertex->visited = true;
+		startVertex->effectiveWeight = 0.f;
+
+		auto findEdges = [&](const Vertex &vertex)
+		{
+			for(auto &edge : m_matrix[vertex.id])
+				if(edge) 
+					edges.push(edge);
+		};
+
+		findEdges(*startVertex);
+
+		while(!edges.empty() )
+		{
+			auto min = edges.top();
+			edges.pop();
+
+			float newWeight = min.weight + min.a->effectiveWeight;
+
+			if(newWeight < min.b->effectiveWeight)
+			{
+				min.b->effectiveWeight = newWeight;
+				min.b->parent = min.a;
+			}
+
+			if(min.b->visited) 
+			{
+				std::cout << min.a->id << "\t->\t" << min.b->id << "\tcosts\t" << min.weight << "\tSkipped!\n" ;
+				continue;
+			}
+			else findEdges(*min.b);
+
+			min.b->visited = true;
+
+			std::cout << min.a->id << "\t->\t" << min.b->id << "\tcosts\t" << min.weight << "\tcost for: " << min.b->id << '\t' << min.b->effectiveWeight << '\n';
+		}
+
+		printPath(endVertex);
+		printPath(m_vertices.begin() + 28);
 
 		return std::vector<Edges::iterator>();
 	}
 	
 private:
+	float getDistance(Vertices::iterator it)
+	{
+		if(it->parent != m_vertices.end() ) return m_matrix[it->id][it->parent->id].weight + getDistance(it->parent);
+		return 0.f;
+	}
+
+	void printPath(Vertices::iterator it)
+	{
+		std::cout << it->id << " <- ";
+		if(it->parent != m_vertices.end() ) printPath(it->parent);
+		else puts("START");
+	}
 
 	std::vector<Vertices::iterator> getNeighbours(Vertices::iterator vertex)
 	{
@@ -267,7 +335,8 @@ private:
 		for(auto &v : m_vertices) 
 		{
 			v.visited = false;
-			v.effectiveWeight = std::numeric_limits<float>::max();
+			v.effectiveWeight = std::numeric_limits<float>::infinity();
+			v.parent = m_vertices.end();
 		}
 	}
 
@@ -291,13 +360,12 @@ int main()
 
 	if(!graph.breadthFirst() && !graph.depthFirst() ) graph.repair();
 
-	graph.display();
-	std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
+	//graph.display();
+	//std::cout << std::boolalpha << graph.breadthFirst() << ' ' << graph.depthFirst() << '\n';
 
-	auto s = graph.djikstra(0, 10);
+	auto s = graph.djikstra(24, 37);
 
-	for(auto v : s) std::cout << v->name << '\n';
-	puts("");
+	//graph.csv();
 
 	return 0;
 }
