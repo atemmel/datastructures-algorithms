@@ -4,6 +4,15 @@
 #include <vector>
 
 template<typename ForwardIt>
+void printRange(ForwardIt first, ForwardIt last)
+{
+	std::cout << '{';
+	for(; first != last; first++)
+		std::cout << *first << ", ";
+	std::cout << "}\n";
+}
+
+template<typename ForwardIt>
 void selectionSort(ForwardIt first, ForwardIt last)
 {
 	for(; first != last; first++)
@@ -32,13 +41,34 @@ void insertionSort(RandomAccessIt first,RandomAccessIt last)
 	}
 }
 
-template<typename ForwardIt>
-void printRange(ForwardIt first, ForwardIt last)
+template<typename BidirectionalIt>
+BidirectionalIt partition(BidirectionalIt first, BidirectionalIt last)
 {
-	std::cout << '{';
-	for(; first != last; first++)
-		std::cout << *first << ", ";
-	std::cout << "}\n";
+	auto pivot = *std::prev(last);
+	auto ret = first;
+
+	for(auto it = first; it < std::prev(last); it++)
+	{
+		if(*it < pivot)
+		{
+			std::iter_swap(ret, it);
+			++ret;
+		}
+	}
+
+	std::iter_swap(ret, std::prev(last) );
+	return ret;
+}
+
+template<typename RandomAccessIt>
+void partitionSort(RandomAccessIt first, RandomAccessIt last)
+{
+	if(first >= last) return; //Inget att sortera
+
+	auto middle = partition(first, last);
+
+	partitionSort(first, middle - 1);
+	partitionSort(middle + 1, last);
 }
 
 int main()
@@ -47,7 +77,11 @@ int main()
 
 	printRange(vector.begin(), vector.end() );
 
-	insertionSort(vector.begin(), vector.end() );
+	//insertionSort(vector.begin(), vector.end() );
+
+	//printRange(vector.begin(), vector.end() );
+
+	partitionSort(vector.begin(), vector.end() );
 
 	printRange(vector.begin(), vector.end() );
 
