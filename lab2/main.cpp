@@ -41,10 +41,9 @@ void insertionSort(RandomAccessIt first,RandomAccessIt last)
 	}
 }
 
-template<typename BidirectionalIt>
-BidirectionalIt partition(BidirectionalIt first, BidirectionalIt last)
+template<typename BidirectionalIt, typename T>
+BidirectionalIt pivotedPartition(BidirectionalIt first, BidirectionalIt last, T pivot)
 {
-	auto pivot = *std::prev(last);
 	auto ret = first;
 
 	for(auto it = first; it < std::prev(last); it++)
@@ -60,15 +59,39 @@ BidirectionalIt partition(BidirectionalIt first, BidirectionalIt last)
 	return ret;
 }
 
-template<typename RandomAccessIt>
-void partitionSort(RandomAccessIt first, RandomAccessIt last)
+template<typename BidirectionalIt>
+void partitionSort(BidirectionalIt first, BidirectionalIt last)
 {
-	if(first >= last) return; //Inget att sortera
+	if(first >= last) return; 
 
-	auto middle = partition(first, last);
+	auto middle = pivotedPartition(first, last, *std::prev(last) );
 
-	partitionSort(first, middle - 1);
-	partitionSort(middle + 1, last);
+	partitionSort(first, std::prev(middle) );
+	partitionSort(std::next(middle), last);
+}
+
+template<typename RandomAccessIt>
+RandomAccessIt medianOfThree(RandomAccessIt first, RandomAccessIt last)
+{
+	auto right = std::prev(last);
+	auto middle = first + (std::distance(first, last) / 2);
+
+	if(*right < *first) std::iter_swap(right, first);
+	if(*middle < *first) std::iter_swap(middle, first);
+	if(*right < *middle) std::iter_swap(right, middle);
+
+	return right;
+}
+
+template<typename RandomAccessIt>
+void medianPartitionSort(RandomAccessIt first, RandomAccessIt last)
+{
+	if(first >= last) return; 
+
+	auto middle = pivotedPartition(first, last, *medianOfThree(first, last) );
+
+	medianPartitionSort(first, std::prev(middle) );
+	medianPartitionSort(std::next(middle), last);
 }
 
 int main()
@@ -81,7 +104,9 @@ int main()
 
 	//printRange(vector.begin(), vector.end() );
 
-	partitionSort(vector.begin(), vector.end() );
+	//partitionSort(vector.begin(), vector.end() );
+
+	medianPartitionSort(vector.begin(), vector.end() );
 
 	printRange(vector.begin(), vector.end() );
 
