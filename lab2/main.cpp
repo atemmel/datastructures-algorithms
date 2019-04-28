@@ -1,114 +1,107 @@
-#include <algorithm>
+#include "generators.hpp"
+#include "stopwatch.hpp"
+#include "sorts.hpp"
+
 #include <iostream>
-#include <chrono>
 #include <vector>
 
-template<typename ForwardIt>
-void printRange(ForwardIt first, ForwardIt last)
-{
-	std::cout << '{';
-	for(; first != last; first++)
-		std::cout << *first << ", ";
-	std::cout << "}\n";
-}
 
-template<typename ForwardIt>
-void selectionSort(ForwardIt first, ForwardIt last)
+template<typename Sort, typename Populate>
+void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 {
-	for(; first != last; first++)
+	std::vector<int> vector(size);
+	for(unsigned i = 0; i < iterations; i++)
 	{
-		auto min = std::min_element(first, last);
-		std::swap(*first, *min);
+		std::generate(vector.begin(), vector.end(), populate);
+
+		Stopwatch watch;
+		sort(vector.begin(), vector.end() );
+
+		std::cout << watch.getSeconds() << '\t';
 	}
-}
-
-template<typename RandomAccessIt>
-void insertionSort(RandomAccessIt first,RandomAccessIt last)
-{
-	for(auto it = first + 1; it != last; it++)
-	{
-		auto value = *it;
-		auto insert = it - 1;
-		
-		//För varje element till insättningspunkten (baklänges)
-		for(; insert >= first && *insert > value; insert--) 
-		{
-			//Flytta varje element åt höger
-			*(insert + 1) = *insert;
-		}
-
-		*(insert + 1) = value;
-	}
-}
-
-template<typename BidirectionalIt, typename T>
-BidirectionalIt pivotedPartition(BidirectionalIt first, BidirectionalIt last, T pivot)
-{
-	auto ret = first;
-
-	for(auto it = first; it < std::prev(last); it++)
-	{
-		if(*it < pivot)
-		{
-			std::iter_swap(ret, it);
-			++ret;
-		}
-	}
-
-	std::iter_swap(ret, std::prev(last) );
-	return ret;
-}
-
-template<typename BidirectionalIt>
-void partitionSort(BidirectionalIt first, BidirectionalIt last)
-{
-	if(first >= last) return; 
-
-	auto middle = pivotedPartition(first, last, *std::prev(last) );
-
-	partitionSort(first, std::prev(middle) );
-	partitionSort(std::next(middle), last);
-}
-
-template<typename RandomAccessIt>
-RandomAccessIt medianOfThree(RandomAccessIt first, RandomAccessIt last)
-{
-	auto right = std::prev(last);
-	auto middle = first + (std::distance(first, last) / 2);
-
-	if(*right < *first) std::iter_swap(right, first);
-	if(*middle < *first) std::iter_swap(middle, first);
-	if(*right < *middle) std::iter_swap(right, middle);
-
-	return right;
-}
-
-template<typename RandomAccessIt>
-void medianPartitionSort(RandomAccessIt first, RandomAccessIt last)
-{
-	if(first >= last) return; 
-
-	auto middle = pivotedPartition(first, last, *medianOfThree(first, last) );
-
-	medianPartitionSort(first, std::prev(middle) );
-	medianPartitionSort(std::next(middle), last);
+	std::cout << "\n\n";
 }
 
 int main()
 {
-	std::vector<int> vector = {0, 7, 8, 1, 3, 6, 2, 5, 3, 4, 0};
+	auto insertionLambda = [](auto first, auto last)
+	{
+		insertionSort(first, last);
+	};
+	
+	auto selectionLambda = [](auto first, auto last)
+	{
+		selectionSort(first, last);
+	};
 
-	printRange(vector.begin(), vector.end() );
+	auto partitionLambda = [](auto first, auto last)
+	{
+		partitionSort(first, last);
+	};
 
-	//insertionSort(vector.begin(), vector.end() );
+	auto medianPartitionLambda = [](auto first, auto last)
+	{
+		medianPartitionSort(first, last);
+	};
 
-	//printRange(vector.begin(), vector.end() );
+	auto stdsortLambda = [](auto first, auto last)
+	{
+		std::sort(first, last);
+	};
 
-	//partitionSort(vector.begin(), vector.end() );
+	std::vector<int> vector(1 << 15);
+	auto seed = std::random_device{}();
 
-	medianPartitionSort(vector.begin(), vector.end() );
+	unsigned iterations = 5;
+	unsigned size = 1 << 15;
 
-	printRange(vector.begin(), vector.end() );
+	std::cout << "|| Random ||\n\n";
+	std::cout << "Insertion:\t";
+	benchmark(insertionLambda, Random(seed), iterations, size);
+	std::cout << "Selection:\t";
+	benchmark(selectionLambda, Random(seed), iterations, size);
+	std::cout << "Partition (Right):\t";
+	benchmark(partitionLambda, Random(seed), iterations, size);
+	std::cout << "Partition (Median):\t";
+	benchmark(medianPartitionLambda, Random(seed), iterations, size);
+	std::cout << "std::sort:\t";
+	benchmark(stdsortLambda, Random(seed), iterations, size);
+
+	std::cout << "|| Monotonic Growing ||\n\n";
+	std::cout << "Insertion:\t";
+	benchmark(insertionLambda, MonoGrowing(seed), iterations, size);
+	std::cout << "Selection:\t";
+	benchmark(selectionLambda, MonoGrowing(seed), iterations, size);
+	std::cout << "Partition (Right):\t";
+	benchmark(partitionLambda, MonoGrowing(seed), iterations, size);
+	std::cout << "Partition (Median):\t";
+	benchmark(medianPartitionLambda, MonoGrowing(seed), iterations, size);
+	std::cout << "std::sort:\t";
+	benchmark(stdsortLambda, MonoGrowing(seed), iterations, size);
+
+	std::cout << "|| Monotonic Falling ||\n\n";
+	std::cout << "Insertion:\t";
+	benchmark(insertionLambda, MonoFalling(seed), iterations, size);
+	std::cout << "Selection:\t";
+	benchmark(selectionLambda, MonoFalling(seed), iterations, size);
+	std::cout << "Partition (Right):\t";
+	benchmark(partitionLambda, MonoFalling(seed), iterations, size);
+	std::cout << "Partition (Median):\t";
+	benchmark(medianPartitionLambda, MonoFalling(seed), iterations, size);
+	std::cout << "std::sort:\t";
+	benchmark(stdsortLambda, MonoFalling(seed), iterations, size);
+
+	std::cout << "|| Constant ||\n\n";
+	std::cout << "Insertion:\t";
+	benchmark(insertionLambda, Constant(seed), iterations, size);
+	std::cout << "Selection:\t";
+	benchmark(selectionLambda, Constant(seed), iterations, size);
+	std::cout << "Partition (Right):\t";
+	benchmark(partitionLambda, Constant(seed), iterations, size);
+	std::cout << "Partition (Median):\t";
+	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
+	std::cout << "std::sort:\t";
+	benchmark(stdsortLambda, Constant(seed), iterations, size);
 
 	return 0;
 }
