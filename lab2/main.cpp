@@ -3,23 +3,32 @@
 #include "sorts.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
-
 
 template<typename Sort, typename Populate>
 void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 {
-	std::vector<int> vector(size);
-	for(unsigned i = 0; i < iterations; i++)
+	//Header
+	for(unsigned i = 1; 1 <= iterations; i++) std::cout << size * j << ',';
+	std::cout << '\n';
+
+	for(unsigned j = 1; j <= iterations; j++)
 	{
-		std::generate(vector.begin(), vector.end(), populate);
+		std::vector<int> vector(size * j);
 
-		Stopwatch watch;
-		sort(vector.begin(), vector.end() );
+		for(unsigned i = 0; i < iterations; i++)
+		{
+			std::generate(vector.begin(), vector.end(), populate);
 
-		std::cout << watch.getSeconds() << '\t';
+			Stopwatch watch;
+			sort(vector.begin(), vector.end() );
+
+			std::cout << watch.getSeconds() << ',';
+		}
+		std::cout << "\n";
 	}
-	std::cout << "\n\n";
 }
 
 int main()
@@ -49,12 +58,17 @@ int main()
 		std::sort(first, last);
 	};
 
-	std::vector<int> vector(1 << 15);
-	auto seed = std::random_device{}();
-
+	unsigned seed = std::random_device{}();
 	unsigned iterations = 5;
 	unsigned size = 1 << 15;
 
+	std::ofstream file;
+	std::ostringstream stream;
+	auto oldBuff = std::cout.rdbuf();
+
+	std::cout.rdbuf(stream.rdbuf() );
+
+	/*
 	std::cout << "|| Random ||\n\n";
 	std::cout << "Insertion:\t";
 	benchmark(insertionLambda, Random(seed), iterations, size);
@@ -102,6 +116,37 @@ int main()
 	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
 	std::cout << "std::sort:\t";
 	benchmark(stdsortLambda, Constant(seed), iterations, size);
+	*/
+	auto log = [&](const char* path)
+	{
+		file.open(path);
+		file << stream.str();
+		stream.clear();
+		file.close();
+	};
+
+	/* Insertion, random */
+	benchmark(insertionLambda, Random(seed), iterations, size);
+	log("insertion_random.csv");
+
+	/* Selection, random */
+	benchmark(selectionLambda, Random(seed), iterations, size);
+	log("selection_random.csv");
+
+	/* Partition (Right), random */
+	benchmark(partitionLambda, Random(seed), iterations, size);
+	log("partition_random.csv");
+
+	/* Partition (Median), random */
+	benchmark(medianPartitionLambda, Random(seed), iterations, size);
+	log("medianPartition_random.csv");
+
+	/* std::sort, random */
+	benchmark(stdsortLambda, Random(seed), iterations, size);
+	log("stdsort_random.csv");
+
+
+	std::cout.rdbuf(oldBuff);
 
 	return 0;
 }
