@@ -11,15 +11,17 @@ template<typename Sort, typename Populate>
 void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 {
 	//Header
-	for(unsigned i = 1; 1 <= iterations; i++) std::cout << size * j << ',';
+	for(unsigned i = 1; i <= iterations; i++) std::cout << size * i << ',';
 	std::cout << '\n';
 
-	for(unsigned j = 1; j <= iterations; j++)
+	for(unsigned j = iterations; j <= iterations; j++)
 	{
 		std::vector<int> vector(size * j);
+		printf("Iteration no: %d\n", j);
 
 		for(unsigned i = 0; i < iterations; i++)
 		{
+			printf("\t Step no: %d\n", i);
 			std::generate(vector.begin(), vector.end(), populate);
 
 			Stopwatch watch;
@@ -29,6 +31,8 @@ void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 		}
 		std::cout << "\n";
 	}
+
+	printf("\n");
 }
 
 int main()
@@ -68,55 +72,6 @@ int main()
 
 	std::cout.rdbuf(stream.rdbuf() );
 
-	/*
-	std::cout << "|| Random ||\n\n";
-	std::cout << "Insertion:\t";
-	benchmark(insertionLambda, Random(seed), iterations, size);
-	std::cout << "Selection:\t";
-	benchmark(selectionLambda, Random(seed), iterations, size);
-	std::cout << "Partition (Right):\t";
-	benchmark(partitionLambda, Random(seed), iterations, size);
-	std::cout << "Partition (Median):\t";
-	benchmark(medianPartitionLambda, Random(seed), iterations, size);
-	std::cout << "std::sort:\t";
-	benchmark(stdsortLambda, Random(seed), iterations, size);
-
-	std::cout << "|| Monotonic Growing ||\n\n";
-	std::cout << "Insertion:\t";
-	benchmark(insertionLambda, MonoGrowing(seed), iterations, size);
-	std::cout << "Selection:\t";
-	benchmark(selectionLambda, MonoGrowing(seed), iterations, size);
-	std::cout << "Partition (Right):\t";
-	benchmark(partitionLambda, MonoGrowing(seed), iterations, size);
-	std::cout << "Partition (Median):\t";
-	benchmark(medianPartitionLambda, MonoGrowing(seed), iterations, size);
-	std::cout << "std::sort:\t";
-	benchmark(stdsortLambda, MonoGrowing(seed), iterations, size);
-
-	std::cout << "|| Monotonic Falling ||\n\n";
-	std::cout << "Insertion:\t";
-	benchmark(insertionLambda, MonoFalling(seed), iterations, size);
-	std::cout << "Selection:\t";
-	benchmark(selectionLambda, MonoFalling(seed), iterations, size);
-	std::cout << "Partition (Right):\t";
-	benchmark(partitionLambda, MonoFalling(seed), iterations, size);
-	std::cout << "Partition (Median):\t";
-	benchmark(medianPartitionLambda, MonoFalling(seed), iterations, size);
-	std::cout << "std::sort:\t";
-	benchmark(stdsortLambda, MonoFalling(seed), iterations, size);
-
-	std::cout << "|| Constant ||\n\n";
-	std::cout << "Insertion:\t";
-	benchmark(insertionLambda, Constant(seed), iterations, size);
-	std::cout << "Selection:\t";
-	benchmark(selectionLambda, Constant(seed), iterations, size);
-	std::cout << "Partition (Right):\t";
-	benchmark(partitionLambda, Constant(seed), iterations, size);
-	std::cout << "Partition (Median):\t";
-	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
-	std::cout << "std::sort:\t";
-	benchmark(stdsortLambda, Constant(seed), iterations, size);
-	*/
 	auto log = [&](const char* path)
 	{
 		file.open(path);
@@ -125,25 +80,55 @@ int main()
 		file.close();
 	};
 
-	/* Insertion, random */
+	// Insertion 
 	benchmark(insertionLambda, Random(seed), iterations, size);
 	log("insertion_random.csv");
+	benchmark(insertionLambda, MonoGrowing(seed), iterations, size);
+	log("insertion_monogrowing.csv");
+	benchmark(insertionLambda, MonoFalling(seed), iterations, size);
+	log("insertion_monofalling.csv");
+	benchmark(insertionLambda, Constant(seed), iterations, size);
+	log("insertion_constant.csv");
 
-	/* Selection, random */
+	// Selection 
 	benchmark(selectionLambda, Random(seed), iterations, size);
 	log("selection_random.csv");
+	benchmark(selectionLambda, MonoGrowing(seed), iterations, size);
+	log("selection_monogrowing.csv");
+	benchmark(selectionLambda, MonoFalling(seed), iterations, size);
+	log("selection_monofalling.csv");
+	benchmark(selectionLambda, Constant(seed), iterations, size);
+	log("selection_constant.csv");
 
-	/* Partition (Right), random */
+	// Partition (Right) 
 	benchmark(partitionLambda, Random(seed), iterations, size);
 	log("partition_random.csv");
+	benchmark(partitionLambda, MonoGrowing(seed), iterations, size);
+	log("partition_monogrowing.csv");
+	benchmark(partitionLambda, MonoFalling(seed), iterations, size);
+	log("partition_monofalling.csv");
+	benchmark(partitionLambda, Constant(seed), iterations, size);	//Missing data from here and below
+	log("partition_constant.csv");
 
-	/* Partition (Median), random */
+	// Partition (Median) 
 	benchmark(medianPartitionLambda, Random(seed), iterations, size);
 	log("medianPartition_random.csv");
+	benchmark(medianPartitionLambda, MonoGrowing(seed), iterations, size);
+	log("medianPartition_monogrowing.csv");
+	benchmark(medianPartitionLambda, MonoFalling(seed), iterations, size);
+	log("medianPartition_monofalling.csv");
+	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
+	log("medianPartition_constant.csv");
 
-	/* std::sort, random */
+	/* std::sort */
 	benchmark(stdsortLambda, Random(seed), iterations, size);
 	log("stdsort_random.csv");
+	benchmark(stdsortLambda, MonoGrowing(seed), iterations, size);
+	log("stdsort_monogrowing.csv");
+	benchmark(stdsortLambda, MonoFalling(seed), iterations, size);
+	log("stdsort_monofalling.csv");
+	benchmark(stdsortLambda, Constant(seed), iterations, size);
+	log("stdsort_constant.csv");
 
 
 	std::cout.rdbuf(oldBuff);
