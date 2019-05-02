@@ -14,7 +14,7 @@ void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 	for(unsigned i = 1; i <= iterations; i++) std::cout << size * i << ',';
 	std::cout << '\n';
 
-	for(unsigned j = iterations; j <= iterations; j++)
+	for(unsigned j = 1; j <= iterations; j++)
 	{
 		std::vector<int> vector(size * j);
 		printf("Iteration no: %d\n", j);
@@ -37,6 +37,7 @@ void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 
 int main()
 {
+	/*
 	auto insertionLambda = [](auto first, auto last)
 	{
 		insertionSort(first, last);
@@ -56,6 +57,7 @@ int main()
 	{
 		medianPartitionSort(first, last);
 	};
+	*/
 
 	auto stdsortLambda = [](auto first, auto last)
 	{
@@ -80,6 +82,7 @@ int main()
 		file.close();
 	};
 
+	/*
 	// Insertion 
 	benchmark(insertionLambda, Random(seed), iterations, size);
 	log("insertion_random.csv");
@@ -119,8 +122,9 @@ int main()
 	log("medianPartition_monofalling.csv");
 	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
 	log("medianPartition_constant.csv");
+	*/
 
-	/* std::sort */
+	// std::sort 
 	benchmark(stdsortLambda, Random(seed), iterations, size);
 	log("stdsort_random.csv");
 	benchmark(stdsortLambda, MonoGrowing(seed), iterations, size);
