@@ -1,2 +1,2 @@
-lab3: *.cpp
+all: *.cpp
 	g++ *.cpp

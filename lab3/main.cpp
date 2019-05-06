@@ -42,14 +42,45 @@ private:
 	static constexpr auto limit = std::sqrt(N);
 };
 
+template<typename ForwardIt, typename T>
+ForwardIt linearSearch(ForwardIt first, ForwardIt last, T value)
+{
+	for(auto it = first; it != last; it++)
+	{
+		if(*it == value) return it;
+	}
+	return last;
+}
+
+template<typename ForwardIt, typename T>
+ForwardIt binarySearch(ForwardIt first, ForwardIt last, T value)
+{
+	auto left = first, right = std::prev(last);
+
+	while(left <= right)
+	{
+		auto middle = left + std::distance(left, right) / 2;
+
+		if(value > *middle) left = std::next(middle);
+		else if(value < *middle) right = std::prev(middle);
+		else return middle;
+	}
+
+	return last;
+}
+
 int main()
 {
-	Sieve<100> sieve;
+	std::vector<int> vector(1000);
+	std::generate(vector.begin(), vector.end(), Sieve<1 << 15>() );
 
-	for(int i = 0; i < 9; i++)
-	{
-		std::cout << sieve() << '\n';
-	}
+	for(auto i : vector) std::cout << i << ' ';
+	std::cout << '\n' << std::boolalpha;
+
+	std::cout << "waawa\n";
+	std::cout << ( linearSearch(vector.begin(), vector.end(), 11) != vector.end() ) << '\n';
+	std::cout << "waawa\n";
+	std::cout << ( binarySearch(vector.begin(), vector.end(), 11) != vector.end() ) << '\n';
 
 	return 0;
 }
