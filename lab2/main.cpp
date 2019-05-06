@@ -37,7 +37,6 @@ void benchmark(Sort sort, Populate populate, unsigned iterations, unsigned size)
 
 int main()
 {
-	/*
 	auto insertionLambda = [](auto first, auto last)
 	{
 		insertionSort(first, last);
@@ -57,7 +56,6 @@ int main()
 	{
 		medianPartitionSort(first, last);
 	};
-	*/
 
 	auto stdsortLambda = [](auto first, auto last)
 	{
@@ -78,11 +76,11 @@ int main()
 	{
 		file.open(path);
 		file << stream.str();
+		stream.str("");
 		stream.clear();
 		file.close();
 	};
 
-	/*
 	// Insertion 
 	benchmark(insertionLambda, Random(seed), iterations, size);
 	log("insertion_random.csv");
@@ -122,7 +120,7 @@ int main()
 	log("medianPartition_monofalling.csv");
 	benchmark(medianPartitionLambda, Constant(seed), iterations, size);
 	log("medianPartition_constant.csv");
-	*/
+
 
 	// std::sort 
 	benchmark(stdsortLambda, Random(seed), iterations, size);
