@@ -1,2 +1,2 @@
 all: *.cpp
-	g++ *.cpp
+	g++ *.cpp -Ofast

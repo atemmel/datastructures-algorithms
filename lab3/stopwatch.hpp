@@ -8,7 +8,7 @@ public:
 	double getSeconds() const
 	{
 		auto end = Clock::now();
-		return std::chrono::duration<double>(end - m_start).count();
+		return std::chrono::duration<double, std::micro>(end - m_start).count();
 	}
 
 	double reset()
