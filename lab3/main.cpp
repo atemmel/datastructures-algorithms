@@ -1,13 +1,19 @@
 #include "stopwatch.hpp"
 #include "bst.hpp"
+#include "hash.hpp"
 
+#include <functional>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <random>
 #include <limits>
+#include <thread>
 #include <cmath>
 
+using namespace std::chrono_literals;
+	
 template<unsigned N>
 struct Sieve
 {
@@ -46,32 +52,52 @@ private:
 	static constexpr auto limit = std::sqrt(N);
 };
 
-template<typename ForwardIt, typename T>
-ForwardIt linearSearch(ForwardIt first, ForwardIt last, T value)
+template<typename ForwardIterator>
+struct LinearSearch
 {
-	for(auto it = first; it != last; it++)
+	LinearSearch(ForwardIterator first, ForwardIterator last)
+	: m_begin(first), m_end(last)
+	{}
+
+	template<typename T>
+	ForwardIterator find(T value)
 	{
-		if(*it == value) return it;
-	}
-	return last;
-}
-
-template<typename ForwardIt, typename T>
-ForwardIt binarySearch(ForwardIt first, ForwardIt last, T value)
-{
-	auto left = first, right = std::prev(last);
-
-	while(left <= right)
-	{
-		auto middle = left + std::distance(left, right) / 2;
-
-		if(value > *middle) left = std::next(middle);
-		else if(value < *middle) right = std::prev(middle);
-		else return middle;
+		for(auto it = m_begin; it != m_end; it++)
+		{
+			if(*it == value) return it;
+		}
+		return m_end;
 	}
 
-	return last;
-}
+	ForwardIterator m_begin, m_end;
+};
+
+template<typename ForwardIterator>
+struct BinarySearch
+{
+	BinarySearch(ForwardIterator first, ForwardIterator last)
+	: m_begin(first), m_end(last)
+	{}
+
+	template<typename T>
+	ForwardIterator find(T value)
+	{
+		auto left = m_begin, right = std::prev(m_end);
+
+		while(left <= right)
+		{
+			auto middle = left + std::distance(left, right) / 2;
+
+			if(value > *middle) left = std::next(middle);
+			else if(value < *middle) right = std::prev(middle);
+			else return middle;
+		}
+
+		return m_end;
+	}
+
+	ForwardIterator m_begin, m_end;
+};
 
 void writePrimes()
 {
@@ -85,14 +111,84 @@ void writePrimes()
 	}
 }
 
+void wait(bool &completed, std::chrono::duration<double> time)
+{
+	std::this_thread::sleep_for(time);
+	completed = true;
+}
+
+template<typename Search, typename T>
+std::uintmax_t bench(Search &search, const std::vector<T> & primes, const size_t limit, std::chrono::duration<double> time)
+{
+	bool completed = false;
+	std::mt19937 gen(std::random_device{}() );
+	std::uniform_int_distribution<int> dist(0, limit );
+	std::uintmax_t iterations = 0;
+	T dummy = T();
+
+	std::thread timer(std::bind(wait, std::ref(completed), time) );
+	do
+	{
+		T value = primes[dist(gen)];
+		auto it = search.find(value);
+		dummy += *it, ++iterations;
+	}
+	while(!completed);
+
+	timer.join();
+
+	std::cout << "Ran " << iterations << " times in " << time.count() << " second\n";
+	std::cout << "Dummy output: " << dummy << "\n\n";
+
+	return iterations;
+}
+
 int main()
 {
 	std::ifstream file("primes");
 	std::vector<int> vector;
-	int value;
+	using iter = decltype(vector.begin() );
 
-	while(file >> value) vector.push_back(value);
+	{
+		std::cout << "Reading primes from file...\n";
+		int value;
+		Stopwatch<std::chrono::seconds> watch;
+		while(file >> value) vector.push_back(value);
+		auto t = watch.reset();
+		std::cout << vector.size() << " primes read, took " << t << " seconds\n\n";
+	}
 
+	{
+		std::cout << "Linear search\n";
+		LinearSearch<iter> linear(vector.begin(), vector.end() );
+
+		bench(linear, vector, vector.size(), 1s);
+	}
+
+	{
+		std::cout << "Binary search\n";
+		BinarySearch<iter> binary(vector.begin(), vector.end() );
+
+		bench(binary, vector, vector.size(), 1s);
+	}
+
+	{
+		std::cout << "Creating BST\n";
+		BinarySearchTree<int> tree(vector.begin(), vector.end() );
+
+		bench(tree, vector, vector.size(), 1s);
+	}
+
+	{
+		std::cout << "Creating Hashtable\n";
+		HashTable<int> hash(vector.begin(), vector.end() );
+
+		bench(hash, vector, vector.size(), 1s);
+	}
+
+	/*
+	//std::vector<int> vector(100);
+	//std::generate(vector.begin(), vector.end(), Sieve<1 << 10>() );
 	BinarySearchTree<int> tree(vector.begin(), vector.end() );
 
 	Stopwatch watch;
@@ -101,6 +197,15 @@ int main()
 	watch.reset();
 	std::cout << *linearSearch(vector.begin(), vector.end(), 123891263) << '\n';
 	std::cout << "Linear search took: " << watch.reset() << "µs\n";
+
+	*/
+
+	/*
+	Stopwatch watch;
+	std::cout << *hash.find(2) << '\n';
+	double time = watch.reset();
+	std::cout << "Hash took: " << time << "µs\n";
+	*/
 
 
 	/*

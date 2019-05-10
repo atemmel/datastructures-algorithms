@@ -1,2 +1,2 @@
 all: *.cpp
-	g++ *.cpp -Ofast
+	g++ *.cpp -Ofast -lpthread
