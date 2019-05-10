@@ -106,7 +106,7 @@ void writePrimes()
 
 	while(curr != prev)
 	{
-		std::cout << curr << ' ';
+		std::cout << curr << ',';
 		prev = curr, curr = primes();
 	}
 }
@@ -122,7 +122,7 @@ std::uintmax_t bench(Search &search, const std::vector<T> & primes, const size_t
 {
 	bool completed = false;
 	std::mt19937 gen(std::random_device{}() );
-	std::uniform_int_distribution<int> dist(0, limit );
+	std::uniform_int_distribution<int> dist(0, limit - 1);
 	std::uintmax_t iterations = 0;
 	T dummy = T();
 
@@ -148,42 +148,94 @@ int main()
 	std::ifstream file("primes");
 	std::vector<int> vector;
 	using iter = decltype(vector.begin() );
+	size_t base = 20000;
+	size_t scale = 10;
 
 	{
 		std::cout << "Reading primes from file...\n";
 		int value;
 		Stopwatch<std::chrono::seconds> watch;
-		while(file >> value) vector.push_back(value);
+		while(file >> value && vector.size() < base * scale) vector.push_back(value);
 		auto t = watch.reset();
 		std::cout << vector.size() << " primes read, took " << t << " seconds\n\n";
 	}
 
 	{
+		std::ofstream file("linear.csv");
 		std::cout << "Linear search\n";
-		LinearSearch<iter> linear(vector.begin(), vector.end() );
 
-		bench(linear, vector, vector.size(), 1s);
+		for(size_t i = 1; i <= scale; i++) file << i * base  << ',';
+		file << '\n';
+
+		for(size_t i = 1; i <= scale; i++)
+		{
+			for(int j = 0; j < scale; j++)
+			{
+				LinearSearch<iter> linear(vector.begin(), vector.begin() + base * i );
+
+				file << bench(linear, vector, base * i, 1s) << ',';
+			}
+
+			file << '\n';
+		}
 	}
 
 	{
+		std::ofstream file("binary.csv");
 		std::cout << "Binary search\n";
-		BinarySearch<iter> binary(vector.begin(), vector.end() );
 
-		bench(binary, vector, vector.size(), 1s);
+		for(size_t i = 1; i <= scale; i++) file << i * base  << ',';
+		file << '\n';
+
+		for(size_t i = 1; i <= scale; i++)
+		{
+			
+			BinarySearch<iter> binary(vector.begin(), vector.begin() + base * i);
+			for(int j = 0; j < scale; j++)
+			{
+				file << bench(binary, vector, base * i, 1s) << ',';
+			}
+
+			file << '\n';
+		}
 	}
 
 	{
+		std::ofstream file("bst.csv");
 		std::cout << "Creating BST\n";
-		BinarySearchTree<int> tree(vector.begin(), vector.end() );
+		
+		for(size_t i = 1; i <= scale; i++) file << i * base  << ',';
+		file << '\n';
 
-		bench(tree, vector, vector.size(), 1s);
+		for(size_t i = 1; i <= scale; i++)
+		{
+			BinarySearchTree<int> tree(vector.begin(), vector.begin() + base * i);
+			for(int j = 0; j < scale; j++)
+			{
+				file << bench(tree, vector, base * i, 1s) << ',';
+			}
+
+			file << '\n';
+		}
 	}
 
 	{
+		std::ofstream file("hash.csv");
 		std::cout << "Creating Hashtable\n";
-		HashTable<int> hash(vector.begin(), vector.end() );
 
-		bench(hash, vector, vector.size(), 1s);
+		for(size_t i = 1; i <= scale; i++) file << i * base  << ',';
+		file << '\n';
+
+		for(size_t i = 1; i <= scale; i++)
+		{
+			HashTable<int> hash(vector.begin(), vector.begin() + base * i);
+			for(int j = 0; j < scale; j++)
+			{
+				file << bench(hash, vector, base * i, 1s) << ',';
+			}
+
+			file << '\n';
+		}
 	}
 
 	/*
