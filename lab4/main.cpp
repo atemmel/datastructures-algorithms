@@ -1,7 +1,5 @@
 #include <SFML/Graphics.hpp>
 
-#include <iostream>
-
 void blur(sf::Texture &texture)
 {
 	auto img = texture.copyToImage();
@@ -9,7 +7,7 @@ void blur(sf::Texture &texture)
 
 	auto med = [&](int x, int y)
 	{
-		constexpr int n = 30, offset = n / 2;
+		constexpr int n = 10, offset = n / 2;
 		int r = 0, g = 0, b = 0, m = 0;
 
 		for(int i = x - offset; i < n + x - offset; i++)
@@ -56,21 +54,6 @@ int main()
 	auto size = texture.getSize();
 	sf::RenderWindow window(sf::VideoMode(size.x, size.y), "Blur");
 
-	blur(texture);
-
-	/*
-	int a = 5;
-	int b = 15;
-
-	std::cout << a << ", " << b << '\n';
-
-	a ^= b;
-	b ^= a;
-	a ^= b;
-
-	std::cout << a << ", " << b << '\n';
-	*/
-
 	window.setFramerateLimit(60u);
 
 	while(window.isOpen() )
@@ -86,8 +69,8 @@ int main()
 					break;
 				case sf::Event::Resized:
 					sprite.setScale(
-							event.size.width / sprite.getLocalBounds().width,
-							event.size.height / sprite.getLocalBounds().height
+							sprite.getLocalBounds().width / event.size.width,
+							sprite.getLocalBounds().width / event.size.height 
 							);
 					break;
 				case sf::Event::KeyPressed:
@@ -96,6 +79,9 @@ int main()
 						case sf::Keyboard::Key::Q:
 						case sf::Keyboard::Key::Escape:
 							window.close();
+							break;
+						case sf::Keyboard::Key::Space:
+							blur(texture);
 							break;
 					}
 			}
