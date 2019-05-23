@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 
+template<int N>
 void blur(sf::Texture &texture)
 {
 	auto img = texture.copyToImage();
@@ -7,14 +8,14 @@ void blur(sf::Texture &texture)
 
 	auto med = [&](int x, int y)
 	{
-		constexpr int n = 10, offset = n / 2;
+		constexpr int offset = N / 2;
 		int r = 0, g = 0, b = 0, m = 0;
 
-		for(int i = x - offset; i < n + x - offset; i++)
+		for(int i = x - offset; i < N + x - offset; i++)
 		{
 			if(i < 0 || i >= size.x) continue;
 
-			for(int j = y - offset; j < n + y - offset; j++)
+			for(int j = y - offset; j < N + y - offset; j++)
 			{
 				if(j < 0 || j >= size.y) continue;
 
@@ -27,6 +28,7 @@ void blur(sf::Texture &texture)
 			}
 		}
 
+		//Edge case
 		if(m == 0) return img.getPixel(x, y);
 
 		r /= m, g /= m, b /= m;
@@ -35,20 +37,24 @@ void blur(sf::Texture &texture)
 	};
 
 	for(int i = 0; i < size.x; i++)
+	{
 		for(int j = 0; j < size.y; j++)
 		{
 			auto color = med(i, j);
 			img.setPixel(i, j, color);
 		}
+	}
 
 	texture.update(img);
 }
 
-int main()
+int main(int argc, char** argv)
 {
+	if(argc != 2) return EXIT_FAILURE;
+
 	sf::Texture texture;
 
-	if(!texture.loadFromFile("lily.jpg") ) return EXIT_FAILURE;
+	if(!texture.loadFromFile(argv[1]) ) return EXIT_FAILURE;
 
 	sf::Sprite sprite(texture);
 	auto size = texture.getSize();
@@ -81,7 +87,7 @@ int main()
 							window.close();
 							break;
 						case sf::Keyboard::Key::Space:
-							blur(texture);
+							blur<10>(texture);
 							break;
 					}
 			}
