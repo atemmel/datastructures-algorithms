@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
 
-template<int N>
+template<int N = 3>
 void blur(sf::Texture &texture)
 {
 	auto img = texture.copyToImage();
@@ -87,7 +87,9 @@ int main(int argc, char** argv)
 							window.close();
 							break;
 						case sf::Keyboard::Key::Space:
-							blur<10>(texture);
+							blur<3>(texture);
+							blur<3>(texture);
+							blur<3>(texture);
 							break;
 					}
 			}

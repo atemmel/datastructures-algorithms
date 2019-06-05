@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -lsfml-graphics -lsfml-window -lsfml-system -Ofast
+	g++ *.cpp -lsfml-graphics -lsfml-window -lsfml-system -Ofast -o blur
